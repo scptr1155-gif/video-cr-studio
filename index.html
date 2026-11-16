@@ -44,11 +44,11 @@
   #watchPage { display: none; padding: 20px 40px; max-width: 1800px; margin: 0 auto; gap: 30px; }
   .player-section { flex: 1; min-width: 0; position: relative; }
   
-  /* VİDEO ORTASINDAKİ 2 SANİYELİK LOADING ANİMASYONU */
+  /* TAM 2 SANİYELİK YÜKLEME EKRANI */
   .player-loading-overlay {
     position: absolute; top: 0; left: 0; width: 100%; aspect-ratio: 16/9;
     background: #09090b; display: none; align-items: center; justify-content: center;
-    border-radius: 16px; z-index: 30; flex-direction: column;
+    border-radius: 16px; z-index: 50; flex-direction: column;
   }
   .player-loading-overlay.active { display: flex; }
 
@@ -158,7 +158,7 @@
   <div id="watchPage">
     <div class="player-section">
       
-      <!-- VİDEO ORTASINDAKİ 2 SANİYELİK LOADING ANİMASYONU -->
+      <!-- VİDEO ORTASINDAKİ TAM 2 SANİYELİK YÜKLEME EKRANI -->
       <div class="player-loading-overlay" id="playerLoading">
         <div class="spinner-box">
           <div class="ring-glow"></div>
@@ -281,7 +281,6 @@
     }
   }
 
-  // ==== YÖNLENDİRME VE GERİ BUTONU ====
   function goToHome() {
     document.getElementById('watchPage').style.display = 'none';
     document.getElementById('homePage').style.display = 'block';
@@ -305,7 +304,6 @@
     renderSidebar(videoId);
   }
 
-  // ==== UPLOAD SAYFASI MANTIĞI ====
   function openUploadPage() {
     window.history.pushState({}, '', '/upload');
     document.getElementById('uploadModal').classList.add('active');
@@ -417,25 +415,32 @@
   const customVideoContainer = document.getElementById('customVideoContainer');
   const playerLoading = document.getElementById('playerLoading');
 
+  // ==== KESİN ÇÖZÜM: TAM 2 SANİYE BEKLETEN FONKSİYON ====
   function loadVideo(videoId) {
+    // 1. Yükleme ekranını hemen aç
     playerLoading.classList.add('active');
     centerPlayBtn.classList.remove('show');
     customControls.classList.remove('paused');
 
     const videoUrl = `https://raw.githubusercontent.com/scptr1155-gif/video-star/main/videos/vid.link/${videoId}.mp4`;
+    
+    // 2. Videoyu yükle (Arka planda yüklenmeye başlar)
     video.src = videoUrl; 
     video.load();
-    
-    const videoReady = new Promise((resolve) => {
-      video.addEventListener('canplay', resolve, { once: true });
-    });
 
-    const minimumDelay = new Promise(resolve => setTimeout(resolve, 2000)); // 2 saniye bekleme
-
-    Promise.all([videoReady, minimumDelay]).then(() => {
+    // 3. Kesin Çözüm: Tarayıcı videoyu 0.1 saniyede hazırlasa bile,
+    // setTimeout ile tam 2000 milisaniye (2 saniye) bekliyoruz.
+    setTimeout(() => {
+      // 2 saniye dolunca yükleme ekranını kapat
       playerLoading.classList.remove('active');
-      video.play().catch(e => { centerPlayBtn.classList.add('show'); customControls.classList.add('paused'); });
-    });
+      
+      // Ve videoyu başlat
+      video.play().catch(e => { 
+        // Tarayıcı otomatik oynatmayı engellerse butonu göster
+        centerPlayBtn.classList.add('show'); 
+        customControls.classList.add('paused'); 
+      });
+    }, 2000); 
   }
 
   function togglePlay() { if (video.paused) video.play(); else video.pause(); }
