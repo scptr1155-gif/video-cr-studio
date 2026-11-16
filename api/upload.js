@@ -1,39 +1,73 @@
-export const config = { api: { bodyParser: false } }; // Vercel'in kendi boyut sınırını esnetmek için gerekli
+export const config = {
+  api: {
+    bodyParser: false, // Vercel'in boyut sınırını esnetmek için gerekli
+  },
+};
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
 
   try {
-    // Vercel ortam değişkenlerinden gizli bilgileri alıyoruz
-    const PROXY_URL = process.env.PROXY_URL; 
+    const PROXY_URL = process.env.PROXY_URL;
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-    const videoId = req.query.videoId || req.body.videoId; // FormData'dan gelen ID (Basitleştirilmiş)
 
-    // 1. Adım: GitHub'da Release oluştur
-    const createReleaseRes = await fetch(`https://api.github.com/repos/scptr1155-gif/video-star/releases`, {
+    if (!PROXY_URL || !GITHUB_TOKEN) {
+      return res.status(500).json({ error: 'Sunucu ayarları eksik (PROXY_URL veya GITHUB_TOKEN).' });
+    }
+
+    // Gelen istekten videoId'yi al (Frontend'den FormData ile geliyor)
+    const videoId = req.query.videoId || new URL(req.url, `http://${req.headers.host}`).searchParams.get('videoId');
+    
+    if (!videoId) {
+       return res.status(400).json({ error: 'Video ID eksik.' });
+    }
+
+    // 1. Adım: GitHub'da yeni bir Release oluştur
+    const releaseRes = await fetch(`https://api.github.com/repos/scptr1155-gif/video-star/releases`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}`, 'Accept': 'application/vnd.github+json' },
+      headers: { 
+        'Authorization': `Bearer ${GITHUB_TOKEN}`, 
+        'Accept': 'application/vnd.github+json' 
+      },
       body: JSON.stringify({ tag_name: `auto-${videoId}`, name: `Video ${videoId}` })
     });
 
-    if (!createReleaseRes.ok) throw new Error('Release failed');
-    const releaseData = await createReleaseRes.json();
+    if (!releaseRes.ok) throw new Error('GitHub Release oluşturulamadı.');
+    const releaseData = await releaseRes.json();
 
-    // 2. Adım: Videoyu Cloudflare Proxy üzerinden yükle (Büyük dosyalar için en iyi yöntem)
-    // Not: Vercel boyut sınırına takılmamak için videoyu doğrudan proxy'ye yönlendiriyoruz.
-    const proxyUploadUrl = `${PROXY_URL}/upload?tag=${releaseData.tag_name}&id=${videoId}`;
+    // 2. Adım: Videoyu Cloudflare Proxy üzerinden GitHub'a fırlat (Boyut sınırı yok)
+    const uploadUrl = `${PROXY_URL}/upload?tag=${releaseData.tag_name}&id=${videoId}`;
     
-    const uploadRes = await fetch(proxyUploadUrl, {
+    const uploadRes = await fetch(uploadUrl, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}` },
-      body: req, // Gelen dosya akışını doğrudan Cloudflare'a gönder
-      duplex: 'half' // Node.js stream uyumluluğu için
+      headers: {
+        'Authorization': `Bearer ${GITHUB_TOKEN}`
+      },
+      body: req, // Vercel'e gelen dosya akışını doğrudan proxy'ye gönderiyoruz
+      duplex: 'half'
     });
 
-    if (!uploadRes.ok) throw new Error('Upload failed');
+    if (!uploadRes.ok) throw new Error('Proxy yüklemesi başarısız oldu.');
 
-    res.status(200).json({ success: true, message: 'Uploaded successfully' });
+    // 3. Adım: Arka plandaki robotu tetikle (Videoyu vid.link klasörüne taşıması için)
+    await fetch(`https://api.github.com/repos/scptr1155-gif/video-star/dispatches`, {
+      method: 'POST',
+      headers: { 
+        'Authorization': `Bearer ${GITHUB_TOKEN}`, 
+        'Accept': 'application/vnd.github+json' 
+      },
+      body: JSON.stringify({
+        event_type: 'move_video_to_folder',
+        client_payload: { video_id: videoId, tag_name: releaseData.tag_name }
+      })
+    });
+
+    res.status(200).json({ success: true, message: 'Video başarıyla yüklendi.' });
+
   } catch (error) {
+    console.error('Upload Error:', error);
     res.status(500).json({ error: error.message });
   }
 }
