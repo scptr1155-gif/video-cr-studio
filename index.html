@@ -44,7 +44,17 @@
   #watchPage { display: none; padding: 20px 40px; max-width: 1800px; margin: 0 auto; gap: 30px; }
   .player-section { flex: 1; min-width: 0; position: relative; }
   
-  /* TAM 2 SANİYELİK YÜKLEME EKRANI */
+  /* ==== TARAYICI KONTROLLERİNİ KESİN GİZLEME ==== */
+  video::-webkit-media-controls,
+  video::-webkit-media-controls-enclosure,
+  video::-webkit-media-controls-panel,
+  video::-webkit-media-controls-play-button,
+  video::-webkit-media-controls-start-playback-button {
+      display: none !important;
+      -webkit-appearance: none !important;
+      opacity: 0 !important;
+  }
+
   .player-loading-overlay {
     position: absolute; top: 0; left: 0; width: 100%; aspect-ratio: 16/9;
     background: #09090b; display: none; align-items: center; justify-content: center;
@@ -53,11 +63,13 @@
   .player-loading-overlay.active { display: flex; }
 
   .video-container { width: 100%; background: #000; border-radius: 16px; overflow: hidden; aspect-ratio: 16/9; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; -webkit-user-select: none; user-select: none; }
-  video::-webkit-media-controls { display: none !important; }
+  
   video { width: 100%; height: 100%; object-fit: contain; outline: none; position: relative; z-index: 1; cursor: pointer; }
+  
   .center-play-btn { position: absolute; z-index: 10; width: 80px; height: 80px; background: rgba(99, 102, 241, 0.8); backdrop-filter: blur(10px); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; color: #fff; cursor: pointer; transition: all 0.3s; opacity: 0; pointer-events: none; transform: scale(0.8); }
   .center-play-btn.show { opacity: 1; pointer-events: auto; transform: scale(1); }
   .center-play-btn:hover { background: rgba(99, 102, 241, 1); transform: scale(1.1); }
+  
   .custom-controls { position: absolute; bottom: 0; left: 0; width: 100%; z-index: 10; background: linear-gradient(transparent, rgba(0,0,0,0.9)); padding: 20px 20px 15px; display: flex; flex-direction: column; gap: 10px; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
   .video-container:hover .custom-controls, .custom-controls.paused { opacity: 1; pointer-events: auto; }
   .progress-container { width: 100%; height: 5px; background: rgba(255,255,255,0.2); border-radius: 3px; cursor: pointer; position: relative; transition: height 0.2s; }
@@ -73,6 +85,7 @@
   .volume-container { display: flex; align-items: center; gap: 8px; }
   .volume-slider { width: 0; opacity: 0; transition: all 0.3s; cursor: pointer; accent-color: #6366f1; }
   .volume-container:hover .volume-slider { width: 80px; opacity: 1; }
+  
   .video-details { margin-top: 20px; }
   .video-details h1 { font-size: 1.5rem; margin-bottom: 10px; font-weight: 600; }
   .video-meta { color: #9ca3af; font-size: 0.9rem; display: flex; gap: 15px; align-items: center; }
@@ -158,7 +171,6 @@
   <div id="watchPage">
     <div class="player-section">
       
-      <!-- VİDEO ORTASINDAKİ TAM 2 SANİYELİK YÜKLEME EKRANI -->
       <div class="player-loading-overlay" id="playerLoading">
         <div class="spinner-box">
           <div class="ring-glow"></div>
@@ -169,7 +181,8 @@
       </div>
 
       <div class="video-container" id="customVideoContainer" oncontextmenu="return false;">
-        <video id="mainVideo" playsinline disablepictureinpicture controlslist="nodownload" oncontextmenu="return false;"></video>
+        <!-- controls niteliğini kaldırdık, tarayıcının kendi barı çıkmayacak -->
+        <video id="mainVideo" playsinline disablepictureinpicture oncontextmenu="return false;"></video>
         <div class="center-play-btn" id="centerPlayBtn">▶</div>
         <div class="custom-controls" id="customControls">
           <div class="progress-container" id="progressContainer"><div class="progress-filled" id="progressFilled"></div></div>
@@ -415,28 +428,22 @@
   const customVideoContainer = document.getElementById('customVideoContainer');
   const playerLoading = document.getElementById('playerLoading');
 
-  // ==== KESİN ÇÖZÜM: TAM 2 SANİYE BEKLETEN FONKSİYON ====
+  // ==== KESİN ÇÖZÜM: 2 SANİYE BEKLETEN VE TARAYICI BARINI GİZLEYEN FONKSİYON ====
   function loadVideo(videoId) {
-    // 1. Yükleme ekranını hemen aç
     playerLoading.classList.add('active');
     centerPlayBtn.classList.remove('show');
     customControls.classList.remove('paused');
 
     const videoUrl = `https://raw.githubusercontent.com/scptr1155-gif/video-star/main/videos/vid.link/${videoId}.mp4`;
-    
-    // 2. Videoyu yükle (Arka planda yüklenmeye başlar)
     video.src = videoUrl; 
+    
+    // Tarayıcının yerleşik kontrol barını zorla gizle (CSS'e rağmen çıkarsa diye)
+    video.removeAttribute('controls'); 
     video.load();
 
-    // 3. Kesin Çözüm: Tarayıcı videoyu 0.1 saniyede hazırlasa bile,
-    // setTimeout ile tam 2000 milisaniye (2 saniye) bekliyoruz.
     setTimeout(() => {
-      // 2 saniye dolunca yükleme ekranını kapat
       playerLoading.classList.remove('active');
-      
-      // Ve videoyu başlat
       video.play().catch(e => { 
-        // Tarayıcı otomatik oynatmayı engellerse butonu göster
         centerPlayBtn.classList.add('show'); 
         customControls.classList.add('paused'); 
       });
