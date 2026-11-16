@@ -44,7 +44,7 @@
   #watchPage { display: none; padding: 20px 40px; max-width: 1800px; margin: 0 auto; gap: 30px; }
   .player-section { flex: 1; min-width: 0; position: relative; }
   
-  /* ==== TARAYICI KONTROLLERİNİ KESİN GİZLEME ==== */
+  /* Tarayıcı Kontrollerini Gizle */
   video::-webkit-media-controls,
   video::-webkit-media-controls-enclosure,
   video::-webkit-media-controls-panel,
@@ -181,7 +181,6 @@
       </div>
 
       <div class="video-container" id="customVideoContainer" oncontextmenu="return false;">
-        <!-- controls niteliğini kaldırdık, tarayıcının kendi barı çıkmayacak -->
         <video id="mainVideo" playsinline disablepictureinpicture oncontextmenu="return false;"></video>
         <div class="center-play-btn" id="centerPlayBtn">▶</div>
         <div class="custom-controls" id="customControls">
@@ -428,25 +427,48 @@
   const customVideoContainer = document.getElementById('customVideoContainer');
   const playerLoading = document.getElementById('playerLoading');
 
-  // ==== KESİN ÇÖZÜM: 2 SANİYE BEKLETEN VE TARAYICI BARINI GİZLEYEN FONKSİYON ====
+  // ==== KESİN ÇÖZÜM: 2 SANİYE BEKLETEN, HATA OLURSA PLAY BUTONU ÇIKARAN FONKSİYON ====
   function loadVideo(videoId) {
+    // 1. Loading ekranını aç ve kontrolleri gizle
     playerLoading.classList.add('active');
     centerPlayBtn.classList.remove('show');
     customControls.classList.remove('paused');
 
     const videoUrl = `https://raw.githubusercontent.com/scptr1155-gif/video-star/main/videos/vid.link/${videoId}.mp4`;
-    video.src = videoUrl; 
     
-    // Tarayıcının yerleşik kontrol barını zorla gizle (CSS'e rağmen çıkarsa diye)
+    // 2. Videoyu sıfırla ve yükle
+    video.src = videoUrl; 
     video.removeAttribute('controls'); 
     video.load();
 
+    // 3. Videonun yüklenip yüklenmediğini (siyah ekranda kalmamasını) kontrol et
+    let videoLoaded = false;
+    
+    // Videonun oynamaya hazır olduğu an
+    video.oncanplay = () => { videoLoaded = true; };
+    
+    // Videonun hata verdiği an (bozuk dosya vs.)
+    video.onerror = () => { videoLoaded = false; };
+
+    // 4. 2 saniye boyunca bekle
     setTimeout(() => {
       playerLoading.classList.remove('active');
-      video.play().catch(e => { 
+      
+      // Eğer video başarıyla yüklendiyse oynatmaya çalış
+      if (videoLoaded) {
+        let playPromise = video.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(e => { 
+            // Tarayıcı otomatik oynatmayı engellerse, play butonunu göster
+            centerPlayBtn.classList.add('show'); 
+            customControls.classList.add('paused'); 
+          });
+        }
+      } else {
+        // Eğer video 2 saniyede yüklenemediyse veya hata verdiyse, play butonunu göster ki kullanıcı tıklasın
         centerPlayBtn.classList.add('show'); 
-        customControls.classList.add('paused'); 
-      });
+        customControls.classList.add('paused');
+      }
     }, 2000); 
   }
 
