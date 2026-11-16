@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CR Video</title>
+<link rel="icon" href="data:,">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
@@ -155,10 +156,7 @@
       
       <div class="video-details">
         <h1 id="watch-title">Video Title</h1>
-        <div class="video-meta">
-          <span>👤 CR Community</span>
-          <!-- BURADAKİ GÖRÜNTÜLENME KALDIRILDI -->
-        </div>
+        <div class="video-meta"><span>👤 CR Community</span></div>
       </div>
     </div>
 
@@ -209,7 +207,6 @@
   </div>
 
 <script>
-  // DİKKAT: HİÇBİR API KEY VEYA TOKEN BURADA YOK! TÜM GÜVENLİK VERCEL'DE.
   const translations = {
     en: { community: "👥 Community", create: "+ Create Video", pageTitle: "My Library", emptyTitle: "No videos yet", emptyDesc: "Click the 'Create Video' button to upload your first video.", uploadTitle: "Upload New Video", clickSelect: "Click to select a video", uploadAction: "Upload to System", successTitle: "Uploaded Successfully!", gotoGallery: "Go to Gallery", loadingLib: "LOADING LIBRARY", commTitle: "Welcome to the Community!", commDesc: "This is an open platform where everyone can share their videos.", statVideos: "Videos", statCreators: "Creators", recTitle: "Recommended Videos", by: "By CR Community" },
     tr: { community: "👥 Topluluk", create: "+ Video Oluştur", pageTitle: "Kütüphanem", emptyTitle: "Henüz video yok", emptyDesc: "İlk videonu yüklemek için 'Video Oluştur' butonuna tıkla.", uploadTitle: "Yeni Video Yükle", clickSelect: "Videoyu seçmek için tıkla", uploadAction: "Sisteme Yükle", successTitle: "Başarıyla Yüklendi!", gotoGallery: "Galeriye Git", loadingLib: "KÜTÜPHANE YÜKLENİYOR", commTitle: "Topluluğa Hoş Geldiniz!", commDesc: "Burası herkesin videolarını paylaşabildiği açık bir platform.", statVideos: "Video", statCreators: "İçerik Üreticisi", recTitle: "Önerilen Videolar", by: "CR Topluluğu" }
@@ -268,7 +265,6 @@
   function openCommunityModal() { document.getElementById('stat-videos').innerText = currentVideos.length; document.getElementById('communityModal').classList.add('active'); }
   function closeCommunityModal() { document.getElementById('communityModal').classList.remove('active'); }
 
-  // === VERCEL BACKEND'DEN VİDEOLARI ÇEKİYORUZ (TOKEN GİZLİ) ===
   async function fetchVideosFromGitHub() {
     const grid = document.getElementById('videoGrid');
     const emptyState = document.getElementById('emptyState');
@@ -276,12 +272,10 @@
     grid.innerHTML = ''; emptyState.style.display = 'none'; loader.style.display = 'flex'; 
 
     try {
-      const res = await fetch(`/api/videos?t=${Date.now()}`); // Vercel API'ye istek atıyoruz
+      const res = await fetch(`/api/videos?t=${Date.now()}`); 
       if (!res.ok) throw new Error(`Sunucu Hatası: ${res.status}`);
-      
       const files = await res.json();
       if (!Array.isArray(files)) throw new Error("Klasör boş veya geçersiz yanıt döndü.");
-      
       currentVideos = files.sort((a, b) => b.name.localeCompare(a.name));
       loader.style.display = 'none';
 
@@ -351,7 +345,7 @@
   const customVideoContainer = document.getElementById('customVideoContainer');
 
   function loadVideo(videoId) {
-    // Videoyu Raw GitHub'dan çekiyoruz (Güvenlik gerektirmez)
+    // Videolar doğrudan GitHub Raw'dan çekilir, gizlenmesi gereken bir veri yoktur.
     const videoUrl = `https://raw.githubusercontent.com/scptr1155-gif/video-star/main/videos/vid.link/${videoId}.mp4`;
     video.src = videoUrl; video.load();
     video.play().catch(e => { centerPlayBtn.classList.add('show'); customControls.classList.add('paused'); });
@@ -367,73 +361,3 @@
   video.addEventListener('timeupdate', () => { if (video.duration) { const percent = (video.currentTime / video.duration) * 100; progressFilled.style.width = `${percent}%`; const current = formatTime(video.currentTime); const total = formatTime(video.duration); timeDisplay.textContent = `${current} / ${total}`; } });
   progressContainer.addEventListener('click', (e) => { const rect = progressContainer.getBoundingClientRect(); const pos = (e.clientX - rect.left) / rect.width; video.currentTime = pos * video.duration; });
   volumeSlider.addEventListener('input', (e) => { video.volume = e.target.value; muteBtn.innerHTML = video.volume === 0 ? '🔇' : '🔊'; });
-  muteBtn.addEventListener('click', () => { video.muted = !video.muted; muteBtn.innerHTML = video.muted ? '🔇' : '🔊'; volumeSlider.value = video.muted ? 0 : video.volume; });
-  fullscreenBtn.addEventListener('click', () => { if (!document.fullscreenElement) customVideoContainer.requestFullscreen(); else document.exitFullscreen(); });
-
-  // === YÜKLEME (VERCEL API ÜZERİNDEN) ===
-  function openUploadModal() { document.getElementById('uploadModal').classList.add('active'); resetUploadModal(); }
-  function closeUploadModal() { document.getElementById('uploadModal').classList.remove('active'); }
-  function resetUploadModal() {
-    selectedFile = null; document.getElementById('videoFile').value = ''; document.getElementById('fileName').textContent = translations[currentLang].clickSelect;
-    document.getElementById('dropArea').style.borderColor = 'rgba(255,255,255,0.15)'; document.getElementById('uploadBtn').style.display = 'none';
-    document.getElementById('uploadBtn').disabled = false; document.getElementById('progressWrap').style.display = 'none';
-    document.getElementById('progressBar').style.width = '0%'; document.getElementById('uploadStep1').style.display = 'block';
-    document.getElementById('uploadStep2').style.display = 'none'; document.getElementById('uploadStatus').style.color = '#9ca3af';
-  }
-
-  document.getElementById('videoFile').addEventListener('change', (e) => {
-    if (e.target.files.length > 0) {
-      selectedFile = e.target.files[0];
-      document.getElementById('fileName').textContent = `${selectedFile.name} (${(selectedFile.size / 1024 / 1024).toFixed(2)} MB)`;
-      document.getElementById('dropArea').style.borderColor = '#10b981';
-      document.getElementById('uploadBtn').style.display = 'block';
-    }
-  });
-
-  async function startUpload() {
-    if (!selectedFile) return;
-    const uploadBtn = document.getElementById('uploadBtn');
-    uploadBtn.disabled = true;
-    document.getElementById('progressWrap').style.display = 'block';
-    document.getElementById('uploadStatus').textContent = 'Creating release...';
-    const randomId = String(Math.floor(1 + Math.random() * 999999999)).padStart(9, '0');
-
-    try {
-      // Vercel API'ye yükleme isteği atıyoruz. Token Vercel'de saklı!
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('videoId', randomId);
-
-      const uploadPromise = new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.upload.addEventListener("progress", (e) => {
-          if (e.lengthComputable) {
-            const percent = Math.round((e.loaded / e.total) * 100);
-            document.getElementById('progressBar').style.width = percent + '%';
-            document.getElementById('uploadStatus').textContent = `Uploading: ${percent}%`;
-          }
-        });
-        xhr.addEventListener("load", () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error('Upload Error')));
-        xhr.addEventListener("error", () => reject(new Error('Network Error')));
-        xhr.open('POST', '/api/upload'); // Vercel API Endpoint
-        xhr.send(formData);
-      });
-
-      await uploadPromise;
-      document.getElementById('uploadStatus').textContent = 'Finalizing...';
-      
-      document.getElementById('uploadStep1').style.display = 'none';
-      document.getElementById('uploadStep2').style.display = 'block';
-
-    } catch (error) {
-      document.getElementById('uploadStatus').textContent = 'Hata oluştu, lütfen tekrar deneyin.';
-      document.getElementById('uploadStatus').style.color = '#f87171';
-      uploadBtn.disabled = false;
-    }
-  }
-
-  function finishUpload() { closeUploadModal(); setTimeout(fetchVideosFromGitHub, 3000); }
-  changeLang('en');
-</script>
-</body>
-</html>
