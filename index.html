@@ -12,8 +12,16 @@
   .bg-glow { position: fixed; width: 800px; height: 800px; top: -200px; left: -200px; background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 60%); border-radius: 50%; z-index: -1; pointer-events: none; }
   .bg-glow:nth-child(2) { top: auto; bottom: -200px; left: auto; right: -200px; background: radial-gradient(circle, rgba(168,85,247,0.1) 0%, transparent 60%); }
   nav { display: flex; justify-content: space-between; align-items: center; padding: 15px 40px; background: rgba(5,5,5,0.8); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 50; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  
+  /* NAV SOL TARAF */
+  .nav-left { display: flex; align-items: center; gap: 15px; }
   .logo { font-size: 1.5rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 10px; cursor: pointer; }
   .logo span { color: #6366f1; }
+  
+  /* YENİ: GERİ BUTONU */
+  .back-nav-btn { display: none; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; align-items: center; gap: 8px; font-size: 0.9rem; }
+  .back-nav-btn:hover { background: rgba(255,255,255,0.2); }
+
   .nav-right { display: flex; align-items: center; gap: 15px; }
   .nav-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
   .nav-btn:hover { background: rgba(255,255,255,0.1); }
@@ -107,7 +115,13 @@
   <div class="bg-glow"></div>
 
   <nav>
-    <div class="logo" onclick="goToHome()"><span>▶</span> CR Video</div>
+    <div class="nav-left">
+      <!-- YENİ: Geri Butonu -->
+      <button class="back-nav-btn" id="backBtn" onclick="goToHome()">← Back</button>
+      
+      <div class="logo" onclick="goToHome()"><span>▶</span> CR Video</div>
+    </div>
+    
     <div class="nav-right">
       <button class="nav-btn" onclick="openCommunityModal()" id="btn-community">👥 Community</button>
       <div class="lang-switch">
@@ -208,8 +222,8 @@
 
 <script>
   const translations = {
-    en: { community: "👥 Community", create: "+ Create Video", pageTitle: "My Library", emptyTitle: "No videos yet", emptyDesc: "Click the 'Create Video' button to upload your first video.", uploadTitle: "Upload New Video", clickSelect: "Click to select a video", uploadAction: "Upload to System", successTitle: "Uploaded Successfully!", gotoGallery: "Go to Gallery", loadingLib: "LOADING LIBRARY", commTitle: "Welcome to the Community!", commDesc: "This is an open platform where everyone can share their videos.", statVideos: "Videos", statCreators: "Creators", recTitle: "Recommended Videos", by: "By CR Community" },
-    tr: { community: "👥 Topluluk", create: "+ Video Oluştur", pageTitle: "Kütüphanem", emptyTitle: "Henüz video yok", emptyDesc: "İlk videonu yüklemek için 'Video Oluştur' butonuna tıkla.", uploadTitle: "Yeni Video Yükle", clickSelect: "Videoyu seçmek için tıkla", uploadAction: "Sisteme Yükle", successTitle: "Başarıyla Yüklendi!", gotoGallery: "Galeriye Git", loadingLib: "KÜTÜPHANE YÜKLENİYOR", commTitle: "Topluluğa Hoş Geldiniz!", commDesc: "Burası herkesin videolarını paylaşabildiği açık bir platform.", statVideos: "Video", statCreators: "İçerik Üreticisi", recTitle: "Önerilen Videolar", by: "CR Topluluğu" }
+    en: { community: "👥 Community", create: "+ Create Video", pageTitle: "My Library", emptyTitle: "No videos yet", emptyDesc: "Click the 'Create Video' button to upload your first video.", uploadTitle: "Upload New Video", clickSelect: "Click to select a video", uploadAction: "Upload to System", successTitle: "Uploaded Successfully!", gotoGallery: "Go to Gallery", loadingLib: "LOADING LIBRARY", commTitle: "Welcome to the Community!", commDesc: "This is an open platform where everyone can share their videos.", statVideos: "Videos", statCreators: "Creators", recTitle: "Recommended Videos", by: "By CR Community", back: "← Back" },
+    tr: { community: "👥 Topluluk", create: "+ Video Oluştur", pageTitle: "Kütüphanem", emptyTitle: "Henüz video yok", emptyDesc: "İlk videonu yüklemek için 'Video Oluştur' butonuna tıkla.", uploadTitle: "Yeni Video Yükle", clickSelect: "Videoyu seçmek için tıkla", uploadAction: "Sisteme Yükle", successTitle: "Başarıyla Yüklendi!", gotoGallery: "Galeriye Git", loadingLib: "KÜTÜPHANE YÜKLENİYOR", commTitle: "Topluluğa Hoş Geldiniz!", commDesc: "Burası herkesin videolarını paylaşabildiği açık bir platform.", statVideos: "Video", statCreators: "İçerik Üreticisi", recTitle: "Önerilen Videolar", by: "CR Topluluğu", back: "← Geri" }
   };
 
   let currentLang = 'en';
@@ -238,6 +252,7 @@
     document.getElementById('stat-videos-text').innerHTML = t.statVideos;
     document.getElementById('stat-creators-text').innerHTML = t.statCreators;
     document.getElementById('sidebar-title').innerHTML = t.recTitle;
+    document.getElementById('backBtn').innerHTML = t.back; // Geri butonu çevirisi
     if (!selectedFile) document.getElementById('fileName').innerHTML = t.clickSelect;
     if (currentPlayingId) {
       document.getElementById('watch-title').innerHTML = `Video #${currentPlayingId}`;
@@ -245,9 +260,11 @@
     }
   }
 
+  // ==== YÖNLENDİRME VE GERİ BUTONU ====
   function goToHome() {
     document.getElementById('watchPage').style.display = 'none';
     document.getElementById('homePage').style.display = 'block';
+    document.getElementById('backBtn').style.display = 'none'; // Geri butonunu gizle
     const video = document.getElementById('mainVideo');
     video.pause(); video.src = ''; currentPlayingId = null;
     window.history.pushState({}, '', window.location.pathname);
@@ -256,11 +273,27 @@
   function openWatchPage(videoId, updateHash = true) {
     document.getElementById('homePage').style.display = 'none';
     document.getElementById('watchPage').style.display = 'flex';
+    document.getElementById('backBtn').style.display = 'flex'; // Geri butonunu göster
     document.getElementById('watch-title').innerHTML = `Video #${videoId}`;
     document.querySelector('.video-meta span:first-child').innerHTML = `👤 ${translations[currentLang].by}`;
+    
     if (updateHash) window.history.pushState({ videoId: videoId }, '', `#/watch/${videoId}`);
-    loadVideo(videoId); currentPlayingId = videoId; renderSidebar(videoId);
+    
+    loadVideo(videoId); 
+    currentPlayingId = videoId; 
+    renderSidebar(videoId);
   }
+
+  // ==== TARAYICI GERİ TUŞUNU DİNLEME (En Kritik Düzeltme) ====
+  window.addEventListener('popstate', () => {
+    const hash = window.location.hash;
+    if (hash.startsWith('#/watch/')) {
+      const videoParam = hash.split('/')[2];
+      if (videoParam) openWatchPage(videoParam, false);
+    } else {
+      goToHome(); // Eğer URL'de # yoksa ana sayfaya dön
+    }
+  });
 
   function openCommunityModal() { document.getElementById('stat-videos').innerText = currentVideos.length; document.getElementById('communityModal').classList.add('active'); }
   function closeCommunityModal() { document.getElementById('communityModal').classList.remove('active'); }
@@ -295,6 +328,7 @@
         grid.appendChild(card);
       });
 
+      // Sayfa yenilendiğinde URL'de video varsa aç
       const hash = window.location.hash;
       if (hash.startsWith('#/watch/')) {
         const videoParam = hash.split('/')[2];
@@ -345,7 +379,6 @@
   const customVideoContainer = document.getElementById('customVideoContainer');
 
   function loadVideo(videoId) {
-    // Videolar doğrudan GitHub Raw'dan çekilir, gizlenmesi gereken bir veri yoktur.
     const videoUrl = `https://raw.githubusercontent.com/scptr1155-gif/video-star/main/videos/vid.link/${videoId}.mp4`;
     video.src = videoUrl; video.load();
     video.play().catch(e => { centerPlayBtn.classList.add('show'); customControls.classList.add('paused'); });
@@ -407,7 +440,6 @@
         xhr.addEventListener("load", () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error('Upload Error')));
         xhr.addEventListener("error", () => reject(new Error('Network Error')));
         
-        // DÜZELTME: videoId'yi URL parametresi olarak Vercel'e gönderiyoruz
         xhr.open('POST', `/api/upload?videoId=${randomId}`); 
         xhr.send(formData);
       });
@@ -425,7 +457,14 @@
   }
 
   function finishUpload() { closeUploadModal(); setTimeout(fetchVideosFromGitHub, 3000); }
+  
+  // Sayfa yüklendiğinde dili ayarla
   changeLang('en');
+  
+  // Eğer sayfa #/watch/ ile açıldıysa geri butonunu hemen göster
+  if (window.location.hash.startsWith('#/watch/')) {
+      document.getElementById('backBtn').style.display = 'flex';
+  }
 </script>
 </body>
 </html>
