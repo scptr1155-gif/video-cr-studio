@@ -361,3 +361,71 @@
   video.addEventListener('timeupdate', () => { if (video.duration) { const percent = (video.currentTime / video.duration) * 100; progressFilled.style.width = `${percent}%`; const current = formatTime(video.currentTime); const total = formatTime(video.duration); timeDisplay.textContent = `${current} / ${total}`; } });
   progressContainer.addEventListener('click', (e) => { const rect = progressContainer.getBoundingClientRect(); const pos = (e.clientX - rect.left) / rect.width; video.currentTime = pos * video.duration; });
   volumeSlider.addEventListener('input', (e) => { video.volume = e.target.value; muteBtn.innerHTML = video.volume === 0 ? '🔇' : '🔊'; });
+  muteBtn.addEventListener('click', () => { video.muted = !video.muted; muteBtn.innerHTML = video.muted ? '🔇' : '🔊'; volumeSlider.value = video.muted ? 0 : video.volume; });
+  fullscreenBtn.addEventListener('click', () => { if (!document.fullscreenElement) customVideoContainer.requestFullscreen(); else document.exitFullscreen(); });
+
+  function openUploadModal() { document.getElementById('uploadModal').classList.add('active'); resetUploadModal(); }
+  function closeUploadModal() { document.getElementById('uploadModal').classList.remove('active'); }
+  function resetUploadModal() {
+    selectedFile = null; document.getElementById('videoFile').value = ''; document.getElementById('fileName').textContent = translations[currentLang].clickSelect;
+    document.getElementById('dropArea').style.borderColor = 'rgba(255,255,255,0.15)'; document.getElementById('uploadBtn').style.display = 'none';
+    document.getElementById('uploadBtn').disabled = false; document.getElementById('progressWrap').style.display = 'none';
+    document.getElementById('progressBar').style.width = '0%'; document.getElementById('uploadStep1').style.display = 'block';
+    document.getElementById('uploadStep2').style.display = 'none'; document.getElementById('uploadStatus').style.color = '#9ca3af';
+  }
+
+  document.getElementById('videoFile').addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+      selectedFile = e.target.files[0];
+      document.getElementById('fileName').textContent = `${selectedFile.name} (${(selectedFile.size / 1024 / 1024).toFixed(2)} MB)`;
+      document.getElementById('dropArea').style.borderColor = '#10b981';
+      document.getElementById('uploadBtn').style.display = 'block';
+    }
+  });
+
+  async function startUpload() {
+    if (!selectedFile) return;
+    const uploadBtn = document.getElementById('uploadBtn');
+    uploadBtn.disabled = true;
+    document.getElementById('progressWrap').style.display = 'block';
+    document.getElementById('uploadStatus').textContent = 'Creating release...';
+    const randomId = String(Math.floor(1 + Math.random() * 999999999)).padStart(9, '0');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const uploadPromise = new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener("progress", (e) => {
+          if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('uploadStatus').textContent = `Uploading: ${percent}%`;
+          }
+        });
+        xhr.addEventListener("load", () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error('Upload Error')));
+        xhr.addEventListener("error", () => reject(new Error('Network Error')));
+        
+        // DÜZELTME: videoId'yi URL parametresi olarak Vercel'e gönderiyoruz
+        xhr.open('POST', `/api/upload?videoId=${randomId}`); 
+        xhr.send(formData);
+      });
+
+      await uploadPromise;
+      
+      document.getElementById('uploadStep1').style.display = 'none';
+      document.getElementById('uploadStep2').style.display = 'block';
+
+    } catch (error) {
+      document.getElementById('uploadStatus').textContent = 'Hata oluştu, lütfen tekrar deneyin.';
+      document.getElementById('uploadStatus').style.color = '#f87171';
+      uploadBtn.disabled = false;
+    }
+  }
+
+  function finishUpload() { closeUploadModal(); setTimeout(fetchVideosFromGitHub, 3000); }
+  changeLang('en');
+</script>
+</body>
+</html>
