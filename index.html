@@ -13,12 +13,9 @@
   .bg-glow:nth-child(2) { top: auto; bottom: -200px; left: auto; right: -200px; background: radial-gradient(circle, rgba(168,85,247,0.1) 0%, transparent 60%); }
   nav { display: flex; justify-content: space-between; align-items: center; padding: 15px 40px; background: rgba(5,5,5,0.8); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 50; border-bottom: 1px solid rgba(255,255,255,0.05); }
   
-  /* NAV SOL TARAF */
   .nav-left { display: flex; align-items: center; gap: 15px; }
   .logo { font-size: 1.5rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 10px; cursor: pointer; }
   .logo span { color: #6366f1; }
-  
-  /* YENİ: GERİ BUTONU */
   .back-nav-btn { display: none; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; align-items: center; gap: 8px; font-size: 0.9rem; }
   .back-nav-btn:hover { background: rgba(255,255,255,0.2); }
 
@@ -43,8 +40,18 @@
   .card-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.6; z-index: 1; transition: 0.3s; }
   .video-card:hover .card-bg { opacity: 0.9; }
   .video-info { position: absolute; bottom: 0; left: 0; width: 100%; padding: 15px; background: linear-gradient(transparent, rgba(0,0,0,0.9)); font-size: 1rem; font-weight: 600; pointer-events: none; z-index: 2; }
+  
   #watchPage { display: none; padding: 20px 40px; max-width: 1800px; margin: 0 auto; gap: 30px; }
-  .player-section { flex: 1; min-width: 0; }
+  .player-section { flex: 1; min-width: 0; position: relative; }
+  
+  /* === YENİ: VİDEO ORTASINDAKİ LOADING ANİMASYONU === */
+  .player-loading-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; aspect-ratio: 16/9;
+    background: #000; display: none; align-items: center; justify-content: center;
+    border-radius: 16px; z-index: 20; transition: opacity 0.3s;
+  }
+  .player-loading-overlay.active { display: flex; }
+
   .video-container { width: 100%; background: #000; border-radius: 16px; overflow: hidden; aspect-ratio: 16/9; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; -webkit-user-select: none; user-select: none; }
   video::-webkit-media-controls { display: none !important; }
   video { width: 100%; height: 100%; object-fit: contain; outline: none; position: relative; z-index: 1; cursor: pointer; }
@@ -96,13 +103,14 @@
   .progress-bg { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
   .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #6366f1, #a855f7); transition: width 0.2s; }
   .status-text { text-align: center; margin-top: 15px; font-size: 0.9rem; color: #9ca3af; }
-  .spinner-box { position: relative; width: 70px; height: 70px; margin-bottom: 20px; }
+  
+  /* YÜKLEME ANİMASYONU TASARIMI */
+  .spinner-box { position: relative; width: 70px; height: 70px; }
   .ring { position: absolute; width: 100%; height: 100%; border: 3px solid transparent; border-top-color: #6366f1; border-radius: 50%; animation: spin 1s cubic-bezier(0.5, 0, 0.5, 1) infinite; }
   .ring:nth-child(2) { border-top-color: transparent; border-bottom-color: #a855f7; animation: spin-reverse 1.2s linear infinite; }
   .ring-glow { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%); animation: pulse 2s ease-in-out infinite; }
-  .loader-text { color: #e2e8f0; font-size: 0.85rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; animation: pulse 1.5s ease-in-out infinite; }
-  .sidebar-loader { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 0; width: 100%; }
-  .sidebar-loader .spinner-box { width: 40px; height: 40px; margin-bottom: 10px; }
+  .loader-text { color: #e2e8f0; font-size: 0.85rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; animation: pulse 1.5s ease-in-out infinite; margin-top: 20px; }
+  
   @keyframes spin { to { transform: rotate(360deg); } }
   @keyframes spin-reverse { to { transform: rotate(-360deg); } }
   @keyframes pulse { 0%, 100% { opacity: 0.5; transform: scale(0.95); } 50% { opacity: 1; transform: scale(1.05); } }
@@ -116,9 +124,7 @@
 
   <nav>
     <div class="nav-left">
-      <!-- YENİ: Geri Butonu -->
       <button class="back-nav-btn" id="backBtn" onclick="goToHome()">← Back</button>
-      
       <div class="logo" onclick="goToHome()"><span>▶</span> CR Video</div>
     </div>
     
@@ -147,6 +153,19 @@
 
   <div id="watchPage">
     <div class="player-section">
+      
+      <!-- YENİ: VİDEO YÜKLENİRKEN ÇIKAN ANİMASYON -->
+      <div class="player-loading-overlay" id="playerLoading">
+        <div style="display: flex; flex-direction: column; align-items: center;">
+          <div class="spinner-box">
+            <div class="ring-glow"></div>
+            <div class="ring"></div>
+            <div class="ring"></div>
+          </div>
+          <div class="loader-text">LOADING VIDEO</div>
+        </div>
+      </div>
+
       <div class="video-container" id="customVideoContainer" oncontextmenu="return false;">
         <video id="mainVideo" playsinline disablepictureinpicture controlslist="nodownload" oncontextmenu="return false;"></video>
         <div class="center-play-btn" id="centerPlayBtn">▶</div>
@@ -252,7 +271,7 @@
     document.getElementById('stat-videos-text').innerHTML = t.statVideos;
     document.getElementById('stat-creators-text').innerHTML = t.statCreators;
     document.getElementById('sidebar-title').innerHTML = t.recTitle;
-    document.getElementById('backBtn').innerHTML = t.back; // Geri butonu çevirisi
+    document.getElementById('backBtn').innerHTML = t.back; 
     if (!selectedFile) document.getElementById('fileName').innerHTML = t.clickSelect;
     if (currentPlayingId) {
       document.getElementById('watch-title').innerHTML = `Video #${currentPlayingId}`;
@@ -260,11 +279,10 @@
     }
   }
 
-  // ==== YÖNLENDİRME VE GERİ BUTONU ====
   function goToHome() {
     document.getElementById('watchPage').style.display = 'none';
     document.getElementById('homePage').style.display = 'block';
-    document.getElementById('backBtn').style.display = 'none'; // Geri butonunu gizle
+    document.getElementById('backBtn').style.display = 'none';
     const video = document.getElementById('mainVideo');
     video.pause(); video.src = ''; currentPlayingId = null;
     window.history.pushState({}, '', window.location.pathname);
@@ -273,7 +291,7 @@
   function openWatchPage(videoId, updateHash = true) {
     document.getElementById('homePage').style.display = 'none';
     document.getElementById('watchPage').style.display = 'flex';
-    document.getElementById('backBtn').style.display = 'flex'; // Geri butonunu göster
+    document.getElementById('backBtn').style.display = 'flex';
     document.getElementById('watch-title').innerHTML = `Video #${videoId}`;
     document.querySelector('.video-meta span:first-child').innerHTML = `👤 ${translations[currentLang].by}`;
     
@@ -284,14 +302,13 @@
     renderSidebar(videoId);
   }
 
-  // ==== TARAYICI GERİ TUŞUNU DİNLEME (En Kritik Düzeltme) ====
   window.addEventListener('popstate', () => {
     const hash = window.location.hash;
     if (hash.startsWith('#/watch/')) {
       const videoParam = hash.split('/')[2];
       if (videoParam) openWatchPage(videoParam, false);
     } else {
-      goToHome(); // Eğer URL'de # yoksa ana sayfaya dön
+      goToHome();
     }
   });
 
@@ -328,7 +345,6 @@
         grid.appendChild(card);
       });
 
-      // Sayfa yenilendiğinde URL'de video varsa aç
       const hash = window.location.hash;
       if (hash.startsWith('#/watch/')) {
         const videoParam = hash.split('/')[2];
@@ -377,11 +393,35 @@
   const fullscreenBtn = document.getElementById('fullscreenBtn');
   const customControls = document.getElementById('customControls');
   const customVideoContainer = document.getElementById('customVideoContainer');
+  const playerLoading = document.getElementById('playerLoading');
 
+  // ==== VİDEO YÜKLEME VE 1 SANİYELİK ANİMASYON MANTIĞI ====
   function loadVideo(videoId) {
+    // Önce yükleme ekranını göster
+    playerLoading.classList.add('active');
+    centerPlayBtn.classList.remove('show');
+    customControls.classList.remove('paused');
+
     const videoUrl = `https://raw.githubusercontent.com/scptr1155-gif/video-star/main/videos/vid.link/${videoId}.mp4`;
-    video.src = videoUrl; video.load();
-    video.play().catch(e => { centerPlayBtn.classList.add('show'); customControls.classList.add('paused'); });
+    video.src = videoUrl; 
+    video.load();
+    
+    // Videonun oynatılmaya hazır olduğu anı bekle
+    const videoReady = new Promise((resolve) => {
+      video.addEventListener('canplay', resolve, { once: true });
+    });
+
+    // En az 1 saniye bekle (1 saniyeden kısa sürede yüklense bile animasyon görünsün diye)
+    const minimumDelay = new Promise(resolve => setTimeout(resolve, 1000));
+
+    // İkisi de bittiğinde (yani video hazırsa ve 1 saniye geçtiyse) ekranı aç
+    Promise.all([videoReady, minimumDelay]).then(() => {
+      playerLoading.classList.remove('active');
+      video.play().catch(e => { 
+        centerPlayBtn.classList.add('show'); 
+        customControls.classList.add('paused'); 
+      });
+    });
   }
 
   function togglePlay() { if (video.paused) video.play(); else video.pause(); }
@@ -390,6 +430,7 @@
   centerPlayBtn.addEventListener('click', togglePlay);
   video.addEventListener('play', () => { playPauseBtn.innerHTML = '⏸'; centerPlayBtn.classList.remove('show'); customControls.classList.remove('paused'); });
   video.addEventListener('pause', () => { playPauseBtn.innerHTML = '▶'; centerPlayBtn.classList.add('show'); customControls.classList.add('paused'); });
+  
   function formatTime(seconds) { if (isNaN(seconds)) return "0:00"; const m = Math.floor(seconds / 60); const s = Math.floor(seconds % 60); return `${m}:${s < 10 ? '0' : ''}${s}`; }
   video.addEventListener('timeupdate', () => { if (video.duration) { const percent = (video.currentTime / video.duration) * 100; progressFilled.style.width = `${percent}%`; const current = formatTime(video.currentTime); const total = formatTime(video.duration); timeDisplay.textContent = `${current} / ${total}`; } });
   progressContainer.addEventListener('click', (e) => { const rect = progressContainer.getBoundingClientRect(); const pos = (e.clientX - rect.left) / rect.width; video.currentTime = pos * video.duration; });
@@ -458,10 +499,7 @@
 
   function finishUpload() { closeUploadModal(); setTimeout(fetchVideosFromGitHub, 3000); }
   
-  // Sayfa yüklendiğinde dili ayarla
   changeLang('en');
-  
-  // Eğer sayfa #/watch/ ile açıldıysa geri butonunu hemen göster
   if (window.location.hash.startsWith('#/watch/')) {
       document.getElementById('backBtn').style.display = 'flex';
   }
