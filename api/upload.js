@@ -14,14 +14,14 @@ export default async function handler(req, res) {
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
     if (!PROXY_URL || !GITHUB_TOKEN) {
-      return res.status(500).json({ error: 'Sunucu ayarları eksik (PROXY_URL veya GITHUB_TOKEN).' });
+      return res.status(500).json({ error: 'Sunucu ayarları eksik.' });
     }
 
-    // Gelen istekten videoId'yi al (Frontend'den FormData ile geliyor)
-    const videoId = req.query.videoId || new URL(req.url, `http://${req.headers.host}`).searchParams.get('videoId');
-    
+    // URL'den videoId'yi alıyoruz
+    const videoId = req.query.videoId;
+
     if (!videoId) {
-       return res.status(400).json({ error: 'Video ID eksik.' });
+      return res.status(400).json({ error: 'Video ID eksik.' });
     }
 
     // 1. Adım: GitHub'da yeni bir Release oluştur
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
     if (!releaseRes.ok) throw new Error('GitHub Release oluşturulamadı.');
     const releaseData = await releaseRes.json();
 
-    // 2. Adım: Videoyu Cloudflare Proxy üzerinden GitHub'a fırlat (Boyut sınırı yok)
+    // 2. Adım: Videoyu Cloudflare Proxy üzerinden GitHub'a fırlat
     const uploadUrl = `${PROXY_URL}/upload?tag=${releaseData.tag_name}&id=${videoId}`;
     
     const uploadRes = await fetch(uploadUrl, {
@@ -45,13 +45,13 @@ export default async function handler(req, res) {
       headers: {
         'Authorization': `Bearer ${GITHUB_TOKEN}`
       },
-      body: req, // Vercel'e gelen dosya akışını doğrudan proxy'ye gönderiyoruz
+      body: req, // Gelen istek akışını (dosyayı) doğrudan proxy'ye gönder
       duplex: 'half'
     });
 
     if (!uploadRes.ok) throw new Error('Proxy yüklemesi başarısız oldu.');
 
-    // 3. Adım: Arka plandaki robotu tetikle (Videoyu vid.link klasörüne taşıması için)
+    // 3. Adım: Robotu tetikle (vid.link klasörüne taşıması için)
     await fetch(`https://api.github.com/repos/scptr1155-gif/video-star/dispatches`, {
       method: 'POST',
       headers: { 
