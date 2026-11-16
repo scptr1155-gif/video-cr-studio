@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CR Video</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+  body { background-color: #050505; color: #fff; min-height: 100vh; overflow-x: hidden; }
+  .bg-glow { position: fixed; width: 800px; height: 800px; top: -200px; left: -200px; background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 60%); border-radius: 50%; z-index: -1; pointer-events: none; }
+  .bg-glow:nth-child(2) { top: auto; bottom: -200px; left: auto; right: -200px; background: radial-gradient(circle, rgba(168,85,247,0.1) 0%, transparent 60%); }
+  nav { display: flex; justify-content: space-between; align-items: center; padding: 15px 40px; background: rgba(5,5,5,0.8); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 50; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .logo { font-size: 1.5rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .logo span { color: #6366f1; }
+  .nav-right { display: flex; align-items: center; gap: 15px; }
+  .nav-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+  .nav-btn:hover { background: rgba(255,255,255,0.1); }
+  .lang-switch { display: flex; gap: 5px; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); }
+  .lang-btn { background: none; border: none; color: #9ca3af; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+  .lang-btn.active { background: #6366f1; color: #fff; }
+  .create-btn { padding: 10px 24px; font-size: 0.95rem; font-weight: 600; color: #fff; background: linear-gradient(135deg, #6366f1, #a855f7); border: none; border-radius: 50px; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(99,102,241,0.4); }
+  .create-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(99,102,241,0.6); }
+  .container { padding: 40px; max-width: 1600px; margin: 0 auto; }
+  .page-title { font-size: 2rem; margin-bottom: 30px; font-weight: 600; }
+  #galleryLoading { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 50vh; }
+  .empty-state { text-align: center; padding: 100px 20px; color: #9ca3af; background: rgba(255,255,255,0.02); border-radius: 24px; border: 1px dashed rgba(255,255,255,0.1); width: 100%; }
+  .empty-state h2 { color: #fff; margin-bottom: 10px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
+  .video-card { background: #1a1c29; border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; overflow: hidden; cursor: pointer; transition: all 0.3s ease; position: relative; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+  .video-card:hover { transform: translateY(-5px) scale(1.02); border-color: rgba(99,102,241,0.5); box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+  .play-icon { width: 60px; height: 60px; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #fff; transition: 0.3s; border: 1px solid rgba(255,255,255,0.2); z-index: 2; }
+  .video-card:hover .play-icon { background: #6366f1; transform: scale(1.1); border-color: transparent; }
+  .card-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.6; z-index: 1; transition: 0.3s; }
+  .video-card:hover .card-bg { opacity: 0.9; }
+  .video-info { position: absolute; bottom: 0; left: 0; width: 100%; padding: 15px; background: linear-gradient(transparent, rgba(0,0,0,0.9)); font-size: 1rem; font-weight: 600; pointer-events: none; z-index: 2; }
+  #watchPage { display: none; padding: 20px 40px; max-width: 1800px; margin: 0 auto; gap: 30px; }
+  .player-section { flex: 1; min-width: 0; }
+  .video-container { width: 100%; background: #000; border-radius: 16px; overflow: hidden; aspect-ratio: 16/9; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; -webkit-user-select: none; user-select: none; }
+  video::-webkit-media-controls { display: none !important; }
+  video { width: 100%; height: 100%; object-fit: contain; outline: none; position: relative; z-index: 1; cursor: pointer; }
+  .center-play-btn { position: absolute; z-index: 10; width: 80px; height: 80px; background: rgba(99, 102, 241, 0.8); backdrop-filter: blur(10px); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; color: #fff; cursor: pointer; transition: all 0.3s; opacity: 0; pointer-events: none; transform: scale(0.8); }
+  .center-play-btn.show { opacity: 1; pointer-events: auto; transform: scale(1); }
+  .center-play-btn:hover { background: rgba(99, 102, 241, 1); transform: scale(1.1); }
+  .custom-controls { position: absolute; bottom: 0; left: 0; width: 100%; z-index: 10; background: linear-gradient(transparent, rgba(0,0,0,0.9)); padding: 20px 20px 15px; display: flex; flex-direction: column; gap: 10px; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .video-container:hover .custom-controls, .custom-controls.paused { opacity: 1; pointer-events: auto; }
+  .progress-container { width: 100%; height: 5px; background: rgba(255,255,255,0.2); border-radius: 3px; cursor: pointer; position: relative; transition: height 0.2s; }
+  .progress-container:hover { height: 8px; }
+  .progress-filled { height: 100%; background: #6366f1; width: 0%; border-radius: 3px; position: relative; pointer-events: none; }
+  .progress-filled::after { content: ''; position: absolute; right: -6px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; background: #fff; border-radius: 50%; box-shadow: 0 0 10px rgba(99,102,241,0.8); opacity: 0; transition: opacity 0.2s; }
+  .progress-container:hover .progress-filled::after { opacity: 1; }
+  .controls-row { display: flex; justify-content: space-between; align-items: center; color: #fff; }
+  .controls-left, .controls-right { display: flex; align-items: center; gap: 15px; }
+  .control-btn { background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color 0.2s; padding: 5px; }
+  .control-btn:hover { color: #a5b4fc; }
+  .time-display { font-size: 0.85rem; font-family: monospace; color: #d1d5db; }
+  .volume-container { display: flex; align-items: center; gap: 8px; }
+  .volume-slider { width: 0; opacity: 0; transition: all 0.3s; cursor: pointer; accent-color: #6366f1; }
+  .volume-container:hover .volume-slider { width: 80px; opacity: 1; }
+  .video-details { margin-top: 20px; }
+  .video-details h1 { font-size: 1.5rem; margin-bottom: 10px; font-weight: 600; }
+  .video-meta { color: #9ca3af; font-size: 0.9rem; display: flex; gap: 15px; align-items: center; }
+  .sidebar-section { width: 380px; flex-shrink: 0; }
+  .sidebar-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 20px; color: #e2e8f0; }
+  .sidebar-list { display: flex; flex-direction: column; gap: 15px; max-height: calc(100vh - 120px); overflow-y: auto; padding-right: 10px; }
+  .sidebar-list::-webkit-scrollbar { width: 6px; }
+  .sidebar-list::-webkit-scrollbar-thumb { background: #2d3045; border-radius: 10px; }
+  .sidebar-card { display: flex; gap: 12px; cursor: pointer; transition: 0.2s; border-radius: 12px; padding: 8px; }
+  .sidebar-card:hover { background: rgba(255,255,255,0.05); }
+  .sidebar-thumb { width: 160px; height: 90px; border-radius: 8px; flex-shrink: 0; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; transition: 0.3s; }
+  .sidebar-thumb .play-icon-small { width: 36px; height: 36px; background: rgba(0,0,0,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; backdrop-filter: blur(4px); opacity: 0; transition: 0.2s; color: white; }
+  .sidebar-card:hover .play-icon-small { opacity: 1; }
+  .sidebar-info { display: flex; flex-direction: column; justify-content: flex-start; padding-top: 5px; }
+  .sidebar-info h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .sidebar-info p { color: #9ca3af; font-size: 0.8rem; }
+  .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: 0.3s; }
+  .modal-overlay.active { opacity: 1; pointer-events: all; }
+  .modal-content { background: #11131c; border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; width: 90%; max-width: 600px; padding: 30px; position: relative; transform: scale(0.9); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .modal-overlay.active .modal-content { transform: scale(1); }
+  .close-btn { position: absolute; top: 15px; right: 20px; background: none; border: none; color: #9ca3af; font-size: 1.5rem; cursor: pointer; transition: 0.2s; z-index: 10; }
+  input[type="file"] { display: none; }
+  .drop-area { border: 2px dashed rgba(255,255,255,0.15); border-radius: 12px; padding: 40px 20px; text-align: center; cursor: pointer; transition: 0.3s; background: rgba(255,255,255,0.02); margin: 20px 0; }
+  .drop-area:hover { border-color: #6366f1; background: rgba(99,102,241,0.05); }
+  .drop-icon { font-size: 2.5rem; margin-bottom: 10px; display: block; }
+  .action-btn { width: 100%; padding: 14px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; display: none; transition: 0.3s; }
+  .progress-wrap { display: none; margin-top: 15px; }
+  .progress-bg { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #6366f1, #a855f7); transition: width 0.2s; }
+  .status-text { text-align: center; margin-top: 15px; font-size: 0.9rem; color: #9ca3af; }
+  .spinner-box { position: relative; width: 70px; height: 70px; margin-bottom: 20px; }
+  .ring { position: absolute; width: 100%; height: 100%; border: 3px solid transparent; border-top-color: #6366f1; border-radius: 50%; animation: spin 1s cubic-bezier(0.5, 0, 0.5, 1) infinite; }
+  .ring:nth-child(2) { border-top-color: transparent; border-bottom-color: #a855f7; animation: spin-reverse 1.2s linear infinite; }
+  .ring-glow { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%); animation: pulse 2s ease-in-out infinite; }
+  .loader-text { color: #e2e8f0; font-size: 0.85rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; animation: pulse 1.5s ease-in-out infinite; }
+  .sidebar-loader { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 0; width: 100%; }
+  .sidebar-loader .spinner-box { width: 40px; height: 40px; margin-bottom: 10px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes spin-reverse { to { transform: rotate(-360deg); } }
+  @keyframes pulse { 0%, 100% { opacity: 0.5; transform: scale(0.95); } 50% { opacity: 1; transform: scale(1.05); } }
+  @media (max-width: 1024px) { #watchPage { flex-direction: column; padding: 20px; } .sidebar-section { width: 100%; } .sidebar-list { max-height: none; } }
+</style>
+</head>
+<body>
+
+  <div class="bg-glow"></div>
+  <div class="bg-glow"></div>
+
+  <nav>
+    <div class="logo" onclick="goToHome()"><span>▶</span> CR Video</div>
+    <div class="nav-right">
+      <button class="nav-btn" onclick="openCommunityModal()" id="btn-community">👥 Community</button>
+      <div class="lang-switch">
+        <button class="lang-btn active" id="btn-en" onclick="changeLang('en')">EN</button>
+        <button class="lang-btn" id="btn-tr" onclick="changeLang('tr')">TR</button>
+      </div>
+      <button class="create-btn" onclick="openUploadModal()" id="btn-create">+ Create Video</button>
+    </div>
+  </nav>
+
+  <div class="container" id="homePage">
+    <h1 class="page-title" id="page-title">My Library</h1>
+    <div id="galleryLoading">
+      <div class="spinner-box"><div class="ring-glow"></div><div class="ring"></div><div class="ring"></div></div>
+      <div class="loader-text" id="gallery-loading-text">LOADING LIBRARY</div>
+    </div>
+    <div class="grid" id="videoGrid"></div>
+    <div class="empty-state" id="emptyState" style="display: none;">
+      <h2 id="empty-title">No videos yet</h2>
+      <p id="empty-desc">Click the "Create Video" button to upload your first video.</p>
+    </div>
+  </div>
+
+  <div id="watchPage">
+    <div class="player-section">
+      <div class="video-container" id="customVideoContainer" oncontextmenu="return false;">
+        <video id="mainVideo" playsinline disablepictureinpicture controlslist="nodownload" oncontextmenu="return false;"></video>
+        <div class="center-play-btn" id="centerPlayBtn">▶</div>
+        <div class="custom-controls" id="customControls">
+          <div class="progress-container" id="progressContainer"><div class="progress-filled" id="progressFilled"></div></div>
+          <div class="controls-row">
+            <div class="controls-left">
+              <button class="control-btn" id="playPauseBtn">▶</button>
+              <div class="volume-container">
+                <button class="control-btn" id="muteBtn">🔊</button>
+                <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.05" value="1">
+              </div>
+              <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
+            </div>
+            <div class="controls-right">
+              <button class="control-btn" id="fullscreenBtn">⛶</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="video-details">
+        <h1 id="watch-title">Video Title</h1>
+        <div class="video-meta">
+          <span>👤 CR Community</span>
+          <!-- BURADAKİ GÖRÜNTÜLENME KALDIRILDI -->
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title" id="sidebar-title">Recommended Videos</div>
+      <div class="sidebar-list" id="sidebarList"></div>
+    </div>
+  </div>
+
+  <!-- Modallar -->
+  <div class="modal-overlay" id="communityModal">
+    <div class="modal-content" style="max-width: 500px;">
+      <button class="close-btn" onclick="closeCommunityModal()">×</button>
+      <div class="community-content">
+        <h1 style="font-size: 3rem; margin-bottom: 10px;">🌍</h1>
+        <h2 id="comm-title">Welcome to the Community!</h2>
+        <p id="comm-desc" style="color: #9ca3af; line-height: 1.6;">This is an open platform where everyone can share their videos. Feel free to upload and watch.</p>
+        <div class="community-stats">
+          <div class="stat-item"><h3 id="stat-videos">0</h3><p id="stat-videos-text">Videos</p></div>
+          <div class="stat-item"><h3>∞</h3><p id="stat-creators-text">Creators</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="uploadModal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeUploadModal()">×</button>
+      <h2 style="text-align: center; margin-bottom: 10px;" id="upload-title">Upload New Video</h2>
+      <div id="uploadStep1">
+        <label class="drop-area" for="videoFile" id="dropArea">
+          <input type="file" id="videoFile" accept="video/*">
+          <span class="drop-icon">📁</span>
+          <div id="fileName" style="color:#9ca3af;">Click to select a video</div>
+        </label>
+        <button id="uploadBtn" class="action-btn" onclick="startUpload()" id="btn-upload-action">Upload to System</button>
+        <div class="progress-wrap" id="progressWrap">
+          <div class="progress-bg"><div class="progress-fill" id="progressBar"></div></div>
+          <div class="status-text" id="uploadStatus"></div>
+        </div>
+      </div>
+      <div id="uploadStep2" style="display: none; text-align: center; padding: 20px 0;">
+        <div style="font-size: 4rem; margin-bottom: 15px;">🎉</div>
+        <h3 style="color: #10b981; margin-bottom: 20px;" id="success-title">Uploaded Successfully!</h3>
+        <button class="action-btn" style="display: block;" onclick="finishUpload()" id="btn-goto-gallery">Go to Gallery</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // DİKKAT: HİÇBİR API KEY VEYA TOKEN BURADA YOK! TÜM GÜVENLİK VERCEL'DE.
+  const translations = {
+    en: { community: "👥 Community", create: "+ Create Video", pageTitle: "My Library", emptyTitle: "No videos yet", emptyDesc: "Click the 'Create Video' button to upload your first video.", uploadTitle: "Upload New Video", clickSelect: "Click to select a video", uploadAction: "Upload to System", successTitle: "Uploaded Successfully!", gotoGallery: "Go to Gallery", loadingLib: "LOADING LIBRARY", commTitle: "Welcome to the Community!", commDesc: "This is an open platform where everyone can share their videos.", statVideos: "Videos", statCreators: "Creators", recTitle: "Recommended Videos", by: "By CR Community" },
+    tr: { community: "👥 Topluluk", create: "+ Video Oluştur", pageTitle: "Kütüphanem", emptyTitle: "Henüz video yok", emptyDesc: "İlk videonu yüklemek için 'Video Oluştur' butonuna tıkla.", uploadTitle: "Yeni Video Yükle", clickSelect: "Videoyu seçmek için tıkla", uploadAction: "Sisteme Yükle", successTitle: "Başarıyla Yüklendi!", gotoGallery: "Galeriye Git", loadingLib: "KÜTÜPHANE YÜKLENİYOR", commTitle: "Topluluğa Hoş Geldiniz!", commDesc: "Burası herkesin videolarını paylaşabildiği açık bir platform.", statVideos: "Video", statCreators: "İçerik Üreticisi", recTitle: "Önerilen Videolar", by: "CR Topluluğu" }
+  };
+
+  let currentLang = 'en';
+  let selectedFile = null;
+  let currentVideos = [];
+  let currentPlayingId = null;
+
+  function changeLang(lang) {
+    currentLang = lang;
+    document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+    document.getElementById('btn-tr').classList.toggle('active', lang === 'tr');
+    document.documentElement.lang = lang;
+    const t = translations[lang];
+    document.getElementById('btn-community').innerHTML = t.community;
+    document.getElementById('btn-create').innerHTML = t.create;
+    document.getElementById('page-title').innerHTML = t.pageTitle;
+    document.getElementById('empty-title').innerHTML = t.emptyTitle;
+    document.getElementById('empty-desc').innerHTML = t.emptyDesc;
+    document.getElementById('upload-title').innerHTML = t.uploadTitle;
+    document.getElementById('uploadBtn').innerHTML = t.uploadAction;
+    document.getElementById('success-title').innerHTML = t.successTitle;
+    document.getElementById('btn-goto-gallery').innerHTML = t.gotoGallery;
+    document.getElementById('gallery-loading-text').innerHTML = t.loadingLib;
+    document.getElementById('comm-title').innerHTML = t.commTitle;
+    document.getElementById('comm-desc').innerHTML = t.commDesc;
+    document.getElementById('stat-videos-text').innerHTML = t.statVideos;
+    document.getElementById('stat-creators-text').innerHTML = t.statCreators;
+    document.getElementById('sidebar-title').innerHTML = t.recTitle;
+    if (!selectedFile) document.getElementById('fileName').innerHTML = t.clickSelect;
+    if (currentPlayingId) {
+      document.getElementById('watch-title').innerHTML = `Video #${currentPlayingId}`;
+      document.querySelector('.video-meta span:first-child').innerHTML = `👤 ${t.by}`;
+    }
+  }
+
+  function goToHome() {
+    document.getElementById('watchPage').style.display = 'none';
+    document.getElementById('homePage').style.display = 'block';
+    const video = document.getElementById('mainVideo');
+    video.pause(); video.src = ''; currentPlayingId = null;
+    window.history.pushState({}, '', window.location.pathname);
+  }
+
+  function openWatchPage(videoId, updateHash = true) {
+    document.getElementById('homePage').style.display = 'none';
+    document.getElementById('watchPage').style.display = 'flex';
+    document.getElementById('watch-title').innerHTML = `Video #${videoId}`;
+    document.querySelector('.video-meta span:first-child').innerHTML = `👤 ${translations[currentLang].by}`;
+    if (updateHash) window.history.pushState({ videoId: videoId }, '', `#/watch/${videoId}`);
+    loadVideo(videoId); currentPlayingId = videoId; renderSidebar(videoId);
+  }
+
+  function openCommunityModal() { document.getElementById('stat-videos').innerText = currentVideos.length; document.getElementById('communityModal').classList.add('active'); }
+  function closeCommunityModal() { document.getElementById('communityModal').classList.remove('active'); }
+
+  // === VERCEL BACKEND'DEN VİDEOLARI ÇEKİYORUZ (TOKEN GİZLİ) ===
+  async function fetchVideosFromGitHub() {
+    const grid = document.getElementById('videoGrid');
+    const emptyState = document.getElementById('emptyState');
+    const loader = document.getElementById('galleryLoading');
+    grid.innerHTML = ''; emptyState.style.display = 'none'; loader.style.display = 'flex'; 
+
+    try {
+      const res = await fetch(`/api/videos?t=${Date.now()}`); // Vercel API'ye istek atıyoruz
+      if (!res.ok) throw new Error(`Sunucu Hatası: ${res.status}`);
+      
+      const files = await res.json();
+      if (!Array.isArray(files)) throw new Error("Klasör boş veya geçersiz yanıt döndü.");
+      
+      currentVideos = files.sort((a, b) => b.name.localeCompare(a.name));
+      loader.style.display = 'none';
+
+      if (currentVideos.length === 0) { emptyState.style.display = 'block'; return; }
+
+      currentVideos.forEach((file) => {
+        const id = file.name.replace('.mp4', '');
+        const card = document.createElement('div');
+        card.className = 'video-card';
+        card.onclick = () => openWatchPage(id);
+        const hue = Math.floor(Math.random() * 360); 
+        card.innerHTML = `
+          <div class="card-bg" style="background: linear-gradient(135deg, hsl(${hue}, 70%, 20%), hsl(${(hue + 40) % 360}, 70%, 10%));"></div>
+          <div class="play-icon">▶</div>
+          <div class="video-info">Video #${id}</div>
+        `;
+        grid.appendChild(card);
+      });
+
+      const hash = window.location.hash;
+      if (hash.startsWith('#/watch/')) {
+        const videoParam = hash.split('/')[2];
+        if (videoParam) openWatchPage(videoParam, false);
+      }
+    } catch (error) {
+      loader.style.display = 'none'; emptyState.style.display = 'block';
+      emptyState.innerHTML = `<h2>Bağlantı Hatası</h2><p style="color:#f87171; margin-top:10px;">${error.message}</p>`;
+    }
+  }
+
+  fetchVideosFromGitHub();
+
+  function renderSidebar(currentId) {
+    const list = document.getElementById('sidebarList');
+    list.innerHTML = `<div class="sidebar-loader"><div class="spinner-box"><div class="ring-glow"></div><div class="ring"></div><div class="ring"></div></div><div class="loader-text" style="font-size: 0.7rem;">LOADING</div></div>`;
+    setTimeout(() => {
+      list.innerHTML = '';
+      const others = currentVideos.filter(f => !f.name.includes(currentId));
+      if (others.length === 0) { list.innerHTML = '<p style="color:#9ca3af; padding:10px;">No other videos.</p>'; return; }
+      others.forEach(file => {
+        const id = file.name.replace('.mp4', '');
+        const hue = Math.floor(Math.random() * 360);
+        const card = document.createElement('div');
+        card.className = 'sidebar-card';
+        card.onclick = () => openWatchPage(id);
+        card.innerHTML = `
+          <div class="sidebar-thumb" style="background: linear-gradient(135deg, hsl(${hue}, 70%, 20%), hsl(${(hue + 40) % 360}, 70%, 10%));">
+            <div class="play-icon-small">▶</div>
+          </div>
+          <div class="sidebar-info"><h4>Video #${id}</h4><p>CR Community</p></div>
+        `;
+        list.appendChild(card);
+      });
+    }, 800); 
+  }
+
+  const video = document.getElementById('mainVideo');
+  const playPauseBtn = document.getElementById('playPauseBtn');
+  const centerPlayBtn = document.getElementById('centerPlayBtn');
+  const progressContainer = document.getElementById('progressContainer');
+  const progressFilled = document.getElementById('progressFilled');
+  const timeDisplay = document.getElementById('timeDisplay');
+  const volumeSlider = document.getElementById('volumeSlider');
+  const muteBtn = document.getElementById('muteBtn');
+  const fullscreenBtn = document.getElementById('fullscreenBtn');
+  const customControls = document.getElementById('customControls');
+  const customVideoContainer = document.getElementById('customVideoContainer');
+
+  function loadVideo(videoId) {
+    // Videoyu Raw GitHub'dan çekiyoruz (Güvenlik gerektirmez)
+    const videoUrl = `https://raw.githubusercontent.com/scptr1155-gif/video-star/main/videos/vid.link/${videoId}.mp4`;
+    video.src = videoUrl; video.load();
+    video.play().catch(e => { centerPlayBtn.classList.add('show'); customControls.classList.add('paused'); });
+  }
+
+  function togglePlay() { if (video.paused) video.play(); else video.pause(); }
+  video.addEventListener('click', togglePlay);
+  playPauseBtn.addEventListener('click', togglePlay);
+  centerPlayBtn.addEventListener('click', togglePlay);
+  video.addEventListener('play', () => { playPauseBtn.innerHTML = '⏸'; centerPlayBtn.classList.remove('show'); customControls.classList.remove('paused'); });
+  video.addEventListener('pause', () => { playPauseBtn.innerHTML = '▶'; centerPlayBtn.classList.add('show'); customControls.classList.add('paused'); });
+  function formatTime(seconds) { if (isNaN(seconds)) return "0:00"; const m = Math.floor(seconds / 60); const s = Math.floor(seconds % 60); return `${m}:${s < 10 ? '0' : ''}${s}`; }
+  video.addEventListener('timeupdate', () => { if (video.duration) { const percent = (video.currentTime / video.duration) * 100; progressFilled.style.width = `${percent}%`; const current = formatTime(video.currentTime); const total = formatTime(video.duration); timeDisplay.textContent = `${current} / ${total}`; } });
+  progressContainer.addEventListener('click', (e) => { const rect = progressContainer.getBoundingClientRect(); const pos = (e.clientX - rect.left) / rect.width; video.currentTime = pos * video.duration; });
+  volumeSlider.addEventListener('input', (e) => { video.volume = e.target.value; muteBtn.innerHTML = video.volume === 0 ? '🔇' : '🔊'; });
+  muteBtn.addEventListener('click', () => { video.muted = !video.muted; muteBtn.innerHTML = video.muted ? '🔇' : '🔊'; volumeSlider.value = video.muted ? 0 : video.volume; });
+  fullscreenBtn.addEventListener('click', () => { if (!document.fullscreenElement) customVideoContainer.requestFullscreen(); else document.exitFullscreen(); });
+
+  // === YÜKLEME (VERCEL API ÜZERİNDEN) ===
+  function openUploadModal() { document.getElementById('uploadModal').classList.add('active'); resetUploadModal(); }
+  function closeUploadModal() { document.getElementById('uploadModal').classList.remove('active'); }
+  function resetUploadModal() {
+    selectedFile = null; document.getElementById('videoFile').value = ''; document.getElementById('fileName').textContent = translations[currentLang].clickSelect;
+    document.getElementById('dropArea').style.borderColor = 'rgba(255,255,255,0.15)'; document.getElementById('uploadBtn').style.display = 'none';
+    document.getElementById('uploadBtn').disabled = false; document.getElementById('progressWrap').style.display = 'none';
+    document.getElementById('progressBar').style.width = '0%'; document.getElementById('uploadStep1').style.display = 'block';
+    document.getElementById('uploadStep2').style.display = 'none'; document.getElementById('uploadStatus').style.color = '#9ca3af';
+  }
+
+  document.getElementById('videoFile').addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+      selectedFile = e.target.files[0];
+      document.getElementById('fileName').textContent = `${selectedFile.name} (${(selectedFile.size / 1024 / 1024).toFixed(2)} MB)`;
+      document.getElementById('dropArea').style.borderColor = '#10b981';
+      document.getElementById('uploadBtn').style.display = 'block';
+    }
+  });
+
+  async function startUpload() {
+    if (!selectedFile) return;
+    const uploadBtn = document.getElementById('uploadBtn');
+    uploadBtn.disabled = true;
+    document.getElementById('progressWrap').style.display = 'block';
+    document.getElementById('uploadStatus').textContent = 'Creating release...';
+    const randomId = String(Math.floor(1 + Math.random() * 999999999)).padStart(9, '0');
+
+    try {
+      // Vercel API'ye yükleme isteği atıyoruz. Token Vercel'de saklı!
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('videoId', randomId);
+
+      const uploadPromise = new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener("progress", (e) => {
+          if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('uploadStatus').textContent = `Uploading: ${percent}%`;
+          }
+        });
+        xhr.addEventListener("load", () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error('Upload Error')));
+        xhr.addEventListener("error", () => reject(new Error('Network Error')));
+        xhr.open('POST', '/api/upload'); // Vercel API Endpoint
+        xhr.send(formData);
+      });
+
+      await uploadPromise;
+      document.getElementById('uploadStatus').textContent = 'Finalizing...';
+      
+      document.getElementById('uploadStep1').style.display = 'none';
+      document.getElementById('uploadStep2').style.display = 'block';
+
+    } catch (error) {
+      document.getElementById('uploadStatus').textContent = 'Hata oluştu, lütfen tekrar deneyin.';
+      document.getElementById('uploadStatus').style.color = '#f87171';
+      uploadBtn.disabled = false;
+    }
+  }
+
+  function finishUpload() { closeUploadModal(); setTimeout(fetchVideosFromGitHub, 3000); }
+  changeLang('en');
+</script>
+</body>
+</html>
